@@ -1,30 +1,22 @@
-# This Python code will create a mapping of lexicographic order to numeric order
-# for the numbers 1 through 102.
+import json
 
 # Create a list of numbers as strings
-numbers_as_strings = [str(i) for i in range(1, 103)]
+numbers_as_strings = [str(i) for i in range(0, 102)]
 
 # Sort this list in lexicographic order
 lexicographically_sorted = sorted(numbers_as_strings)
 
-# Create a dictionary to map lexicographic order to numeric order
-lexicographic_to_numeric = {number: index  for index, number in enumerate(lexicographically_sorted)}
+# Create a dictionary to map numeric order to lexicographic order
+numeric_to_lexicographic = {index + 1: number for index, number in enumerate(lexicographically_sorted)}
 
-# Now you can access lexicographic_to_numeric to see the mapping
-# For example, to print out the mapping:
-for lexicographic, numeric in lexicographic_to_numeric.items():
-    print(f"Lexicographic: {lexicographic} -> Numeric: {numeric}")
+# Convert the dictionary to a JSON string
+json_mapping_flipped = json.dumps(numeric_to_lexicographic, indent=4)
 
-# If you want the dictionary itself, just use the variable lexicographic_to_numeric
-import json
-
-# Convert the mapping dictionary to a JSON string for a structured format
-json_mapping = json.dumps(lexicographic_to_numeric, indent=4)
-
-# Specify the filename
-filename = 'lexicographic_to_numeric_mapping.json'
+# Specify the filename for the flipped mapping
+flipped_filename = 'numeric_to_lexicographic_mapping.json'
 
 # Write the JSON string to a file
-with open(filename, 'w') as f:
-    f.write(json_mapping)
+with open(flipped_filename, 'w') as f:
+    f.write(json_mapping_flipped)
 
+print(f"Flipped mapping saved to {flipped_filename}")
