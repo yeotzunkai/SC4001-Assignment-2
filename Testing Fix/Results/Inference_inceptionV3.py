@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder
 import pickle
-
+import modellayers
 # Define the device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
