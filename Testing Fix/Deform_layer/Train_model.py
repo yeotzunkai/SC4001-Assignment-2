@@ -105,10 +105,7 @@ label_encoder.fit(class_names)
 with open('label_encoder.pkl', 'wb') as file:
     pickle.dump(label_encoder, file)
 
-train_losses = []  # To store training losses
-train_accuracies = []  # To store training accuracies
-valid_losses = []  # To store validation losses
-valid_accuracies = []  # To store validation accuracies
+
 
 # Initialize Inception V3 with pre-trained weights
 model = DeformableCNNModel().to(device)
@@ -124,78 +121,79 @@ early_stopping_patience = 5
 min_val_loss = float('inf')
 no_improvement_epochs = 0
 
-# Training loop
-epochs = 50
-for epoch in range(epochs):
-    running_loss = 0.0
-    total_train = 0
-    correct_train = 0
-    model.train()  # Set the model to training mode
-    for inputs, labels in tqdm(trainloader):
-        inputs, labels = inputs.to(device), labels.to(device)
-        optimizer.zero_grad()
-        
-        # Forward pass
-        outputs = model(inputs)
+import pandas as pd
 
+# Number of training epochs
+num_epochs = 100
+writer = SummaryWriter()
+
+train_losses = []  # To store training losses
+train_accuracies = []  # To store training accuracies
+valid_losses = []  # To store validation losses
+valid_accuracies = []  # To store validation accuracies
+
+for epoch in range(num_epochs):
+    model.train()
+    running_loss = 0.0
+    correct_train = 0
+    total_train = 0
+
+    for i, data in enumerate(trainloader, 0):
+        inputs, labels = data[0].to(device), data[1].to(device)
+
+        optimizer.zero_grad()
+        outputs = model(inputs)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
-        
+
         running_loss += loss.item()
 
         # Calculate training accuracy
         _, predicted = torch.max(outputs.data, 1)
         total_train += labels.size(0)
         correct_train += (predicted == labels).sum().item()
-        train_loss = running_loss / len(trainloader)
-        train_losses.append(train_loss)
-        train_accuracy = 100 * correct_train / total_train
-        train_accuracies.append(train_accuracy)
 
+    train_loss = running_loss / len(trainloader)
+    train_losses.append(train_loss)
+    train_accuracy = 100 * correct_train / total_train
+    train_accuracies.append(train_accuracy)
 
-    # Validation loop...
+    print(f"Epoch {epoch + 1}/{num_epochs}, Training Loss: {train_loss:.4f}, Training Accuracy: {train_accuracy:.2f}%")
+
+    # Validation
+    model.eval()
     valid_loss = 0
-    accuracy = 0
-    model.eval()  # Set the model to evaluation mode
+    correct_valid = 0
+    total_valid = 0
+
     with torch.no_grad():
         for inputs, labels in validloader:
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
-            # Again, we access the main output for the loss
-            valid_loss += criterion(outputs, labels).item()
-            
-            _, preds = torch.max(outputs, 1)
-            accuracy += torch.sum(preds == labels.data).item()
-    
-    # Print out the losses and accuracy
-    valid_loss = valid_loss / len(validloader.dataset)
+            loss = criterion(outputs, labels)
+            valid_loss += loss.item()
+
+            _, predicted = torch.max(outputs.data, 1)
+            total_valid += labels.size(0)
+            correct_valid += (predicted == labels).sum().item()
+
+    valid_accuracy = 100 * correct_valid / total_valid
     valid_losses.append(valid_loss / len(validloader))
-    accuracy = accuracy / len(validloader.dataset)
-    print(f"Epoch {epoch+1}/{epochs}.. "
-          f"Train loss: {running_loss/len(trainloader):.3f}.. "
-          f"Validation loss: {valid_loss:.3f}.. "
-          f"Validation accuracy: {accuracy:.3f}")
+    valid_accuracies.append(valid_accuracy)
 
-    # Early stopping check
-    if valid_loss < min_val_loss:
-        min_val_loss = valid_loss
-        no_improvement_epochs = 0
-        # Save the model only when validation loss decreases
-        torch.save(model.state_dict(), 'deform.pth')
+    print(f"Validation Loss: {valid_loss / len(validloader):.4f}, Validation Accuracy: {valid_accuracy:.2f}%")
+
+    # Early Stopping
+    if current_val_loss < best_val_loss:
+        best_val_loss = current_val_loss
+        patience_counter = 0
+        torch.save(model.state_dict(), 'best_model.pth')
     else:
-        no_improvement_epochs += 1
-        if no_improvement_epochs >= early_stopping_patience:
-            print("Early stopping triggered")
+        patience_counter += 1
+        if patience_counter >= patience:
+            print(f"Early stopping triggered at epoch {epoch + 1}. Best validation loss: {best_val_loss:.4f}")
             break
-
-    # Scheduler step (after validation)
-    scheduler.step()
-
-# Save the model if not done in the early stopping
-if no_improvement_epochs < early_stopping_patience:
-    torch.save(model.state_dict(), 'deform.pth')
-
 # After the training loop
 df = pd.DataFrame({
     'Epoch': range(1, num_epochs + 1),
@@ -208,5 +206,3 @@ df = pd.DataFrame({
 # Save the DataFrame to a CSV file
 csv_file = 'Results/deform.csv'
 df.to_csv(csv_file, index=False)
-
-print(f'Training data saved to {csv_file}')
