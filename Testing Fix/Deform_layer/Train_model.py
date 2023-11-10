@@ -125,7 +125,6 @@ import pandas as pd
 
 # Number of training epochs
 num_epochs = 100
-writer = SummaryWriter()
 
 train_losses = []  # To store training losses
 train_accuracies = []  # To store training accuracies
