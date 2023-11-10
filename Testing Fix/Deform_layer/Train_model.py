@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import torchvision
 from tqdm import tqdm  # Standard import for scripts and applications
-
+import pandas as pd
 class DeformableCNNModel(nn.Module):
     def __init__(self):
         super(DeformableCNNModel, self).__init__()
@@ -200,7 +200,7 @@ if patience_counter < patience:
 
 # After the training loop
 df = pd.DataFrame({
-    'Epoch': range(1, num_epochs + 1),
+    'Epoch': range(1, len(train_losses) + 1),
     'Training Loss': train_losses,
     'Training Accuracy': train_accuracies,
     'Validation Loss': valid_losses,
