@@ -4,9 +4,11 @@ import torch.optim as optim
 from torchvision import datasets, transforms, models
 from torch.utils.data import DataLoader
 import pickle
+import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import torchvision
 from tqdm import tqdm  # Standard import for scripts and applications
+
 class DeformableCNNModel(nn.Module):
     def __init__(self):
         super(DeformableCNNModel, self).__init__()
@@ -165,19 +167,19 @@ for epoch in range(num_epochs):
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
             # Again, we access the main output for the loss
-            valid_loss += criterion(outputs, labels).item()
+            valid_loss += criterion(outputs, labels)
 
             _, predicted = torch.max(outputs.data, 1)
             total_valid += labels.size(0)
             correct_valid += (predicted == labels).sum().item()
 
     # Print out the losses and accuracy
-    valid_loss = valid_loss / len(validloader.dataset)
+    current_val_loss = valid_loss / len(validloader)
     valid_losses.append(valid_loss / len(validloader))
     valid_accuracy = 100 * correct_valid / total_valid
     valid_accuracies.append(valid_accuracy)
 
-    print(f"Validation Loss: {valid_loss / len(validloader):.4f}, Validation Accuracy: {valid_accuracy:.2f}%")
+    print(f"Validation Loss: {current_val_loss :.4f}, Validation Accuracy: {valid_accuracy:.2f}%")
 
     # Early Stopping
     if current_val_loss < best_val_loss:
@@ -194,7 +196,7 @@ for epoch in range(num_epochs):
     scheduler.step()
 
 if no_improvement_epochs < early_stopping_patience:
-    torch.save(inception.state_dict(), 'deform.pth')
+    torch.save(model.state_dict(), 'deform.pth')
 
 # After the training loop
 df = pd.DataFrame({
