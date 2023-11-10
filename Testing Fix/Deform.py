@@ -120,7 +120,7 @@ with open('label_encoder.pkl', 'wb') as file:
 
 
 # Initialize Inception V3 with pre-trained weights
-model = TransferLearningModel().to(device)
+model = DeformableCNNModel().to(device)
 
 
 # Loss function and optimizer
