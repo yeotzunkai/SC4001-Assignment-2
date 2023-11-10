@@ -195,7 +195,7 @@ for epoch in range(num_epochs):
     # Scheduler step (after validation)
     scheduler.step()
 
-if no_improvement_epochs < early_stopping_patience:
+if patience_counter < patience:
     torch.save(model.state_dict(), 'deform.pth')
 
 # After the training loop
