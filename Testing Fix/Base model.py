@@ -78,7 +78,7 @@ valid_data = datasets.ImageFolder('dataset/splitted_dataset/valid', transform=va
 
 # Using the image datasets and the transforms, define the dataloaders
 trainloader = DataLoader(train_data, batch_size=64, shuffle=True)
-validloader = DataLoader(valid_data, batch_size=32)
+validloader = DataLoader(valid_data, batch_size=64)
 
 
 # Get class names from the 'class_to_idx' attribute of the dataset
