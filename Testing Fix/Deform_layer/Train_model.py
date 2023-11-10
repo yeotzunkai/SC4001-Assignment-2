@@ -105,7 +105,10 @@ label_encoder.fit(class_names)
 with open('label_encoder.pkl', 'wb') as file:
     pickle.dump(label_encoder, file)
 
-
+train_losses = []  # To store training losses
+train_accuracies = []  # To store training accuracies
+valid_losses = []  # To store validation losses
+valid_accuracies = []  # To store validation accuracies
 
 # Initialize Inception V3 with pre-trained weights
 model = DeformableCNNModel().to(device)
@@ -116,32 +119,24 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
-# Early stopping parameters
-early_stopping_patience = 5
-min_val_loss = float('inf')
-no_improvement_epochs = 0
-
-import pandas as pd
-
-# Number of training epochs
-num_epochs = 100
-
-train_losses = []  # To store training losses
-train_accuracies = []  # To store training accuracies
-valid_losses = []  # To store validation losses
-valid_accuracies = []  # To store validation accuracies
-
+# Initialize early stopping parameters
+best_val_loss = np.Inf
+patience = 5
+patience_counter = 0
+# Training loop
+num_epochs = 50
 for epoch in range(num_epochs):
-    model.train()
     running_loss = 0.0
-    correct_train = 0
     total_train = 0
-
-    for i, data in enumerate(trainloader, 0):
-        inputs, labels = data[0].to(device), data[1].to(device)
-
+    correct_train = 0
+    model.train()  # Set the model to training mode
+    for inputs, labels in tqdm(trainloader):
+        inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
+
+        # Forward pass
         outputs = model(inputs)
+
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -152,7 +147,6 @@ for epoch in range(num_epochs):
         _, predicted = torch.max(outputs.data, 1)
         total_train += labels.size(0)
         correct_train += (predicted == labels).sum().item()
-
     train_loss = running_loss / len(trainloader)
     train_losses.append(train_loss)
     train_accuracy = 100 * correct_train / total_train
@@ -160,25 +154,27 @@ for epoch in range(num_epochs):
 
     print(f"Epoch {epoch + 1}/{num_epochs}, Training Loss: {train_loss:.4f}, Training Accuracy: {train_accuracy:.2f}%")
 
-    # Validation
-    model.eval()
+    # Validation loop...
     valid_loss = 0
-    correct_valid = 0
+    accuracy = 0
     total_valid = 0
-
+    correct_valid = 0
+    model.eval()  # Set the model to evaluation mode
     with torch.no_grad():
         for inputs, labels in validloader:
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            valid_loss += loss.item()
+            # Again, we access the main output for the loss
+            valid_loss += criterion(outputs, labels).item()
 
             _, predicted = torch.max(outputs.data, 1)
             total_valid += labels.size(0)
             correct_valid += (predicted == labels).sum().item()
 
-    valid_accuracy = 100 * correct_valid / total_valid
+    # Print out the losses and accuracy
+    valid_loss = valid_loss / len(validloader.dataset)
     valid_losses.append(valid_loss / len(validloader))
+    valid_accuracy = 100 * correct_valid / total_valid
     valid_accuracies.append(valid_accuracy)
 
     print(f"Validation Loss: {valid_loss / len(validloader):.4f}, Validation Accuracy: {valid_accuracy:.2f}%")
@@ -187,12 +183,19 @@ for epoch in range(num_epochs):
     if current_val_loss < best_val_loss:
         best_val_loss = current_val_loss
         patience_counter = 0
-        torch.save(model.state_dict(), 'best_model.pth')
+        torch.save(model.state_dict(), 'best_model_deform.pth')
     else:
         patience_counter += 1
         if patience_counter >= patience:
             print(f"Early stopping triggered at epoch {epoch + 1}. Best validation loss: {best_val_loss:.4f}")
             break
+
+    # Scheduler step (after validation)
+    scheduler.step()
+
+if no_improvement_epochs < early_stopping_patience:
+    torch.save(inception.state_dict(), 'deform.pth')
+
 # After the training loop
 df = pd.DataFrame({
     'Epoch': range(1, num_epochs + 1),
@@ -205,3 +208,5 @@ df = pd.DataFrame({
 # Save the DataFrame to a CSV file
 csv_file = 'Results/deform.csv'
 df.to_csv(csv_file, index=False)
+
+print(f'Training data saved to {csv_file}')
