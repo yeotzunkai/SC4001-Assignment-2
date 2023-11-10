@@ -27,14 +27,11 @@ import torch.optim as optim
 from torchvision import datasets, transforms, models
 from torch.utils.data import DataLoader
 import pickle
-import numpy as np
 from sklearn.preprocessing import LabelEncoder
-import torchvision
 from tqdm import tqdm  # Standard import for scripts and applications
-import pandas as pd
 class ResBlock(nn.Module):
-    def init(self, in_channels, out_channels, downsample):
-        super(ResBlock, self).init()
+    def __init__(self, in_channels, out_channels, downsample):
+        super(ResBlock, self).__init__()
         stride = 2 if downsample else 1
 
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
@@ -55,8 +52,8 @@ class ResBlock(nn.Module):
         return F.relu(x)
 
 class DeformResNet(nn.Module):
-    def init(self, in_channels, resblock, outputs=2):
-        super(DeformResNet, self).init()
+    def __init__(self, in_channels, resblock, outputs=102):
+        super(DeformResNet, self).__init__()
         self.layer0 = nn.Sequential(
             nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
@@ -82,21 +79,33 @@ class DeformResNet(nn.Module):
         self.fc = nn.Linear(512, outputs)
 
     def forward(self, x):
+        #print("Input size:", x.size())  # Print input size
         x = self.layer0(x)
-        for layer, deform in zip(self.layers, self.deforms):
+        #print("After layer0 size:", x.size())  # Print size after initial layers
+
+        for i, (layer, deform) in enumerate(zip(self.layers, self.deforms)):
+            x = layer(x)
+            #print(f"After layer {i+1} size:", x.size())  # Print size after each ResBlock
+
+            # Assuming the output size is the same as the input size for each layer
+            # Adjust the offset tensor size based on the current feature map size
             offset = torch.rand(x.size(0), 2 * 3 * 3, x.size(2), x.size(3))
             if torch.cuda.is_available():
                 offset = offset.to(x.device)
-            x = deform(layer(x), offset)
+
+            x = deform(x, offset)
+
         x = self.gap(x)
         x = torch.flatten(x, start_dim=1)
         x = self.fc(x)
+        print("Final output size:", x.size())  # Print final output size
         return x
 
+
 class LitDeformModel(pl.LightningModule):
-    def init(self, n_classes=2):
-        super(LitDeformModel, self).init()
-        self.model = DeformResNet(3, ResBlock, 2)
+    def __init__(self, n_classes=102):
+        super(LitDeformModel, self).__init__()  # Corrected here
+        self.model = DeformResNet(3, ResBlock, n_classes)
         self.opt_params = {"lr": 0.001}
 
     def forward(self, x):
