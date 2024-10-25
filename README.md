@@ -1,6 +1,5 @@
 # SC4001-Assignment-2
-**Version**: 1.0.0  <!-- Version must be updated alongside the code version -->
-
+Version: 1.2.3
 ##Group Members
 ### TZUN KAI
 ### NICHOLAS
