@@ -1,0 +1,38 @@
+name: Check Documentation Version Consistency
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get version from code_version.txt
+        id: get_code_version
+        run: |
+          CODE_VERSION=$(grep -E "^version: " code_version.txt | awk '{print $2}')
+          echo "::set-output name=code_version::$CODE_VERSION"
+
+      - name: Get version from README.md
+        id: get_readme_version
+        run: |
+          README_VERSION=$(grep -E "^Version: " README.md | awk '{print $2}')
+          echo "::set-output name=readme_version::$README_VERSION"
+
+      - name: Compare versions
+        run: |
+          if [ "${{ steps.get_code_version.outputs.code_version }}" != "${{ steps.get_readme_version.outputs.readme_version }}" ]; then
+            echo "Error: The version in code (code_version.txt: ${{ steps.get_code_version.outputs.code_version }}) does not match the version in the README (README.md: ${{ steps.get_readme_version.outputs.readme_version }})."
+            exit 1
+          else
+            echo "Success: The versions match."
+          fi
