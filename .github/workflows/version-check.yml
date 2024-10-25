@@ -1,5 +1,6 @@
 name: Check Documentation Version Consistency
 
+# This triggers the workflow on push to main and pull requests to main
 on:
   push:
     branches:
@@ -31,8 +32,8 @@ jobs:
       - name: Compare versions
         run: |
           if [ "${{ steps.get_code_version.outputs.code_version }}" != "${{ steps.get_readme_version.outputs.readme_version }}" ]; then
-            echo "Error: The version in code (code_version.txt: ${{ steps.get_code_version.outputs.code_version }}) does not match the version in the README (README.md: ${{ steps.get_readme_version.outputs.readme_version }})."
+            echo "Error: The version in code_version.txt (code: ${{ steps.get_code_version.outputs.code_version }}) does not match the version in the README (README: ${{ steps.get_readme_version.outputs.readme_version }})."
             exit 1
           else
-            echo "Success: The versions match."
+            echo "Success: Versions match."
           fi
