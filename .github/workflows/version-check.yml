@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - main  # or specify other branches you want to check
+  pull_request:
+    branches:
+      - main  # Ensure it runs on pull requests targeting main
 
 jobs:
-   
-    check-docs:
+  check-docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
