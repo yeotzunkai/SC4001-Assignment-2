@@ -6,7 +6,9 @@ on:
       - main  # or specify other branches you want to check
 
 jobs:
-  check-docs:
+    build: 
+        name: test
+    check-docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
