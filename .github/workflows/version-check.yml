@@ -29,3 +29,4 @@ jobs:
           else
               echo "::error::Documentation in 'docs/' folder is not updated! Please update documentation before committing."
               exit 1
+          fi
