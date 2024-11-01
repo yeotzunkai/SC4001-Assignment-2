@@ -1,39 +1,22 @@
-name: Check Documentation Version Consistency
+name: Check Documentation Update
 
-# This triggers the workflow on push to main and pull requests to main
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - main  # or specify other branches you want to check
 
 jobs:
-  check-versions:
+  check-docs:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Get version from code_version.txt
-        id: get_code_version
+      - name: Check if Documentation is Updated
         run: |
-          CODE_VERSION=$(grep -E "^version: " code_version.txt | awk '{print $2}')
-          echo "::set-output name=code_version::$CODE_VERSION"
-
-      - name: Get version from README.md
-        id: get_readme_version
-        run: |
-          README_VERSION=$(grep -E "^Version: " README.md | awk '{print $2}')
-          echo "::set-output name=readme_version::$README_VERSION"
-
-      - name: Compare versions
-        run: |
-          if [ "${{ steps.get_code_version.outputs.code_version }}" != "${{ steps.get_readme_version.outputs.readme_version }}" ]; then
-            echo "Error: The version in code_version.txt (code: ${{ steps.get_code_version.outputs.code_version }}) does not match the version in the README (README: ${{ steps.get_readme_version.outputs.readme_version }})."
-            exit 1
+          if git diff --name-only HEAD~1 HEAD | grep -q '^docs/'; then
+            echo "Documentation updated."
           else
-            echo "Success: Versions match."
+            echo "::error::Documentation in 'docs/' folder is not updated! Please update documentation before committing."
+            exit 1
           fi
